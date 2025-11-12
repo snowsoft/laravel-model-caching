@@ -1,10 +1,10 @@
 <?php
 
-namespace GeneaLabs\LaravelModelCaching;
+namespace Snowsoft\LaravelModelCaching;
 
 use BackedEnum;
 use Exception;
-use GeneaLabs\LaravelModelCaching\Traits\CachePrefixing;
+use Snowsoft\LaravelModelCaching\Traits\CachePrefixing;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -235,7 +235,7 @@ class CacheKey
 
 	if (data_get($where, "column") instanceof Expression) {
             $where["column"] = $this->expressionToString(data_get($where, "column"));
-        }    
+        }
 
         $column .= isset($where["column"]) ? $where["column"] : "";
         $column .= isset($where["columns"]) ? implode("-", $where["columns"]) : "";
@@ -266,7 +266,7 @@ class CacheKey
         $columns = array_map(function ($column) {
             return $this->expressionToString($column);
         }, $columns);
-        
+
         return "_" . implode("_", $columns);
     }
 

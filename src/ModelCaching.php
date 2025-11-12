@@ -1,6 +1,6 @@
 <?php
 
-namespace GeneaLabs\LaravelModelCaching;
+namespace Snowsoft\LaravelModelCaching;
 
 use Illuminate\Database\Eloquent\Builder;
 

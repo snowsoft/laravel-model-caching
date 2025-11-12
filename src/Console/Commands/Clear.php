@@ -1,4 +1,4 @@
-<?php namespace GeneaLabs\LaravelModelCaching\Console\Commands;
+<?php namespace Snowsoft\LaravelModelCaching\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Container\Container;
@@ -40,7 +40,7 @@ class Clear extends Command
     {
         $model = new $option;
         $usesCachableTrait = $this->getAllTraitsUsedByClass($option)
-            ->contains("GeneaLabs\LaravelModelCaching\Traits\Cachable");
+            ->contains("Snowsoft\LaravelModelCaching\Traits\Cachable");
 
         if (! $usesCachableTrait) {
             $this->error("'{$option}' is not an instance of CachedModel.");

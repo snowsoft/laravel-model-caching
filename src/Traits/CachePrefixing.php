@@ -1,12 +1,22 @@
-<?php namespace GeneaLabs\LaravelModelCaching\Traits;
+<?php namespace Snowsoft\LaravelModelCaching\Traits;
 
+use Snowsoft\LaravelModelCaching\TenantResolver;
 use Illuminate\Container\Container;
 
 trait CachePrefixing
 {
     protected function getCachePrefix() : string
     {
-        $cachePrefix = "genealabs:laravel-model-caching:";
+        $cachePrefix = "snowsoft:laravel-model-caching:";
+
+        // Add tenant identifier if multi-tenancy is enabled
+        if (TenantResolver::isEnabled()) {
+            $tenantId = TenantResolver::getTenantId();
+            if ($tenantId) {
+                $cachePrefix .= "tenant:{$tenantId}:";
+            }
+        }
+
         $useDatabaseKeying = Container::getInstance()
             ->make("config")
             ->get("laravel-model-caching.use-database-keying");
@@ -16,9 +26,13 @@ trait CachePrefixing
             $cachePrefix .= $this->getDatabaseName() . ":";
         }
 
-        $cachePrefix .= Container::getInstance()
+        $configPrefix = Container::getInstance()
             ->make("config")
             ->get("laravel-model-caching.cache-prefix", "");
+
+        if ($configPrefix) {
+            $cachePrefix .= $configPrefix . ":";
+        }
 
         if ($this->model
             && property_exists($this->model, "cachePrefix")

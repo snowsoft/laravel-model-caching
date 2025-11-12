@@ -1,6 +1,6 @@
-<?php namespace GeneaLabs\LaravelModelCaching\Console\Commands;
+<?php namespace Snowsoft\LaravelModelCaching\Console\Commands;
 
-use GeneaLabs\LaravelModelCaching\Providers\Service;
+use Snowsoft\LaravelModelCaching\Providers\Service;
 use Illuminate\Console\Command;
 
 class Publish extends Command

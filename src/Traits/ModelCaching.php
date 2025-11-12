@@ -1,8 +1,9 @@
-<?php namespace GeneaLabs\LaravelModelCaching\Traits;
+<?php namespace Snowsoft\LaravelModelCaching\Traits;
 
-use GeneaLabs\LaravelModelCaching\CachedBelongsToMany;
-use GeneaLabs\LaravelModelCaching\CachedBuilder;
-use GeneaLabs\LaravelModelCaching\EloquentBuilder;
+use Snowsoft\LaravelModelCaching\CachedBelongsToMany;
+use Snowsoft\LaravelModelCaching\CachedBuilder;
+use Snowsoft\LaravelModelCaching\EloquentBuilder;
+use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -63,22 +64,48 @@ trait ModelCaching
 
     public static function bootCachable()
     {
-        static::created(function ($instance) {
-            $instance->checkCooldownAndFlushAfterPersisting($instance);
-        });
+        $useSelectiveInvalidation = Container::getInstance()
+            ->make("config")
+            ->get("laravel-model-caching.use-selective-invalidation", true);
 
-        static::deleted(function ($instance) {
-            $instance->checkCooldownAndFlushAfterPersisting($instance);
-        });
+        if ($useSelectiveInvalidation) {
+            static::created(function ($instance) {
+                $invalidator = Container::getInstance()
+                    ->make(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
+                $invalidator->invalidateOnCreated($instance);
+            });
 
-        static::saved(function ($instance) {
-            $instance->checkCooldownAndFlushAfterPersisting($instance);
-        });
+            static::updated(function ($instance) {
+                $invalidator = Container::getInstance()
+                    ->make(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
+                $invalidator->invalidateOnUpdated($instance, $instance->getDirty());
+            });
 
-        // TODO: figure out how to add this listener
-        // static::restored(function ($instance) {
-        //     $instance->checkCooldownAndFlushAfterPersisting($instance);
-        // });
+            static::deleted(function ($instance) {
+                $invalidator = Container::getInstance()
+                    ->make(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
+                $invalidator->invalidateOnDeleted($instance);
+            });
+
+            static::restored(function ($instance) {
+                $invalidator = Container::getInstance()
+                    ->make(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
+                $invalidator->invalidateOnUpdated($instance);
+            });
+        } else {
+            // Legacy behavior - flush all cache
+            static::created(function ($instance) {
+                $instance->checkCooldownAndFlushAfterPersisting($instance);
+            });
+
+            static::deleted(function ($instance) {
+                $instance->checkCooldownAndFlushAfterPersisting($instance);
+            });
+
+            static::saved(function ($instance) {
+                $instance->checkCooldownAndFlushAfterPersisting($instance);
+            });
+        }
 
         static::pivotSynced(function ($instance, $relationship) {
             $instance->checkCooldownAndFlushAfterPersisting($instance, $relationship);

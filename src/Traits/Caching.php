@@ -1,11 +1,11 @@
 <?php
 
-namespace GeneaLabs\LaravelModelCaching\Traits;
+namespace Snowsoft\LaravelModelCaching\Traits;
 
 use Closure;
-use GeneaLabs\LaravelModelCaching\CachedBuilder;
-use GeneaLabs\LaravelModelCaching\CacheKey;
-use GeneaLabs\LaravelModelCaching\CacheTags;
+use Snowsoft\LaravelModelCaching\CachedBuilder;
+use Snowsoft\LaravelModelCaching\CacheKey;
+use Snowsoft\LaravelModelCaching\CacheTags;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Model;
@@ -84,12 +84,12 @@ trait Caching
     {
         $cache = Container::getInstance()
             ->make("cache");
-        $config = Container::getInstance()
-            ->make("config")
-            ->get("laravel-model-caching.store");
 
-        if ($config) {
-            $cache = $cache->store($config);
+        // Determine which cache store to use
+        $storeName = $this->resolveCacheStore();
+
+        if ($storeName) {
+            $cache = $cache->store($storeName);
         }
 
         if (is_subclass_of($cache->getStore(), TaggableStore::class)) {
@@ -97,6 +97,67 @@ trait Caching
         }
 
         return $cache;
+    }
+
+    /**
+     * Resolve the appropriate cache store based on tenant, connection, and config
+     */
+    protected function resolveCacheStore(): ?string
+    {
+        $config = Container::getInstance()->make("config");
+
+        // Priority 1: Tenant-specific cache store (if enabled)
+        if (class_exists(\Snowsoft\LaravelModelCaching\TenantResolver::class)) {
+            $tenantStore = \Snowsoft\LaravelModelCaching\TenantResolver::getTenantStoreName();
+            if ($tenantStore) {
+                return $tenantStore;
+            }
+        }
+
+        // Priority 2: Connection-specific cache store
+        $connectionStore = $this->getConnectionCacheStore();
+        if ($connectionStore) {
+            return $connectionStore;
+        }
+
+        // Priority 3: Global cache store from config
+        $globalStore = $config->get("laravel-model-caching.store");
+        if ($globalStore) {
+            return $globalStore;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get cache store for current database connection
+     */
+    protected function getConnectionCacheStore(): ?string
+    {
+        if (!property_exists($this, 'model') || !$this->model) {
+            return null;
+        }
+
+        try {
+            $connectionName = $this->model->getConnection()->getName();
+            $config = Container::getInstance()->make("config");
+
+            // Check connection-stores config
+            $connectionStores = $config->get("laravel-model-caching.connection-stores", []);
+            if (isset($connectionStores[$connectionName])) {
+                return $connectionStores[$connectionName];
+            }
+
+            // Check database-stores config (legacy support)
+            $databaseStores = $config->get("laravel-model-caching.database-stores", []);
+            if (isset($databaseStores[$connectionName])) {
+                return $databaseStores[$connectionName];
+            }
+        } catch (\Exception $e) {
+            // Silently fail
+        }
+
+        return null;
     }
 
     public function disableModelCaching()
@@ -145,7 +206,7 @@ trait Caching
             ? "{$cachePrefix}:"
             : "";
 
-        return "genealabs:laravel-model-caching:"
+        return "snowsoft:laravel-model-caching:"
             . $cachePrefix;
     }
 

@@ -1,6 +1,6 @@
-<?php namespace GeneaLabs\LaravelModelCaching;
+<?php namespace Snowsoft\LaravelModelCaching;
 
-use GeneaLabs\LaravelModelCaching\Traits\CachePrefixing;
+use Snowsoft\LaravelModelCaching\Traits\CachePrefixing;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;

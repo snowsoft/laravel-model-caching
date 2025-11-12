@@ -1,6 +1,6 @@
-<?php namespace GeneaLabs\LaravelModelCaching;
+<?php namespace Snowsoft\LaravelModelCaching;
 
-use GeneaLabs\LaravelModelCaching\Traits\Cachable;
+use Snowsoft\LaravelModelCaching\Traits\Cachable;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class CachedModel extends Model

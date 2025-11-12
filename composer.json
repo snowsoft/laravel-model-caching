@@ -1,11 +1,11 @@
 {
-    "name": "mikebronner/laravel-model-caching",
-    "description": "Automatic caching for Eloquent models.",
+    "name": "snowsoft/laravel-model-caching",
+    "description": "Automatic caching for Eloquent models with multi-tenancy and multiple database support.",
     "license": "MIT",
     "authors": [
         {
-            "name": "Mike Bronner",
-            "email": "hello@genealabs.com"
+            "name": "Snowsoft",
+            "email": "info@snowsoft.com"
         }
     ],
     "repositories": [
@@ -15,15 +15,16 @@
         }
     ],
     "require": {
-        "php": ">=8.1",
-        "mikebronner/laravel-pivot-events": "^10.0|^11.0|^12.0",
-        "illuminate/cache": "^10.0|^11.0|^12.0",
-        "illuminate/config": "^10.0|^11.0|^12.0",
-        "illuminate/console": "^10.0|^11.0|^12.0",
-        "illuminate/container": "^10.0|^11.0|^12.0",
-        "illuminate/database": "^10.0|^11.0|^12.0",
-        "illuminate/http": "^10.0|^11.0|^12.0",
-        "illuminate/support": "^10.0|^11.0|^12.0"
+        "php": ">=8.0",
+        "mikebronner/laravel-pivot-events": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/cache": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/config": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/console": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/container": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/database": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/http": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/queue": "^8.0|^9.0|^10.0|^11.0|^12.0"
     },
     "require-dev": {
         "doctrine/dbal": "^3.3|^4.2",
@@ -40,7 +41,7 @@
     },
     "autoload": {
         "psr-4": {
-            "GeneaLabs\\LaravelModelCaching\\": "src/"
+            "Snowsoft\\LaravelModelCaching\\": "src/"
         }
     },
     "autoload-dev": {
@@ -49,13 +50,13 @@
             "tests/database/seeds"
         ],
         "psr-4": {
-            "GeneaLabs\\LaravelModelCaching\\Tests\\": "tests/"
+            "Snowsoft\\LaravelModelCaching\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "GeneaLabs\\LaravelModelCaching\\Providers\\Service"
+                "Snowsoft\\LaravelModelCaching\\Providers\\Service"
             ]
         }
     },

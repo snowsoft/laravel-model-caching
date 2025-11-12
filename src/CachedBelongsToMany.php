@@ -1,9 +1,9 @@
-<?php namespace GeneaLabs\LaravelModelCaching;
+<?php namespace Snowsoft\LaravelModelCaching;
 
 use GeneaLabs\LaravelPivotEvents\Traits\FiresPivotEventsTrait;
-use GeneaLabs\LaravelModelCaching\Traits\Buildable;
-use GeneaLabs\LaravelModelCaching\Traits\BuilderCaching;
-use GeneaLabs\LaravelModelCaching\Traits\Caching;
+use Snowsoft\LaravelModelCaching\Traits\Buildable;
+use Snowsoft\LaravelModelCaching\Traits\BuilderCaching;
+use Snowsoft\LaravelModelCaching\Traits\Caching;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class CachedBelongsToMany extends BelongsToMany

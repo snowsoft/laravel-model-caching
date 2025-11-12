@@ -1,4 +1,4 @@
-<?php namespace GeneaLabs\LaravelModelCaching\Traits;
+<?php namespace Snowsoft\LaravelModelCaching\Traits;
 
 use Illuminate\Pagination\Paginator;
 
@@ -170,7 +170,7 @@ trait Buildable
         if (is_array($page)) {
             $page = $this->recursiveImplodeWithKey($page);
         }
-        
+
         $columns = collect($columns)->toArray();
         $keyDifferentiator = "-paginate_by_{$perPage}_{$pageName}_{$page}";
 

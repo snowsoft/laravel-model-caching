@@ -1,6 +1,6 @@
 <?php
 
-namespace GeneaLabs\LaravelModelCaching\Traits;
+namespace Snowsoft\LaravelModelCaching\Traits;
 
 use Illuminate\Database\Eloquent\Collection;
 
