@@ -5,6 +5,7 @@ namespace Snowsoft\LaravelModelCaching;
 use BackedEnum;
 use Exception;
 use Snowsoft\LaravelModelCaching\Traits\CachePrefixing;
+use Snowsoft\LaravelModelCaching\CacheKeySanitizer;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -45,22 +46,26 @@ class CacheKey
         $idColumn = null,
         string $keyDifferentiator = ""
     ) : string {
-        $key = $this->getCachePrefix();
-        $key .= $this->getTableSlug();
-        $key .= $this->getModelSlug();
-        $key .= $this->getIdColumn($idColumn ?: "");
-        $key .= $this->getQueryColumns($columns);
-        $key .= $this->getWhereClauses();
-        $key .= $this->getHavingClauses();
-        $key .= $this->getWithModels();
-        $key .= $this->getOrderByClauses();
-        $key .= $this->getOffsetClause();
-        $key .= $this->getLimitClause();
-        $key .= $this->getBindingsSlug();
-        $key .= $keyDifferentiator;
-        $key .= $this->macroKey;
+        $components = [];
+        $components[] = $this->getCachePrefix();
+        $components[] = $this->getTableSlug();
+        $components[] = $this->getModelSlug();
+        $components[] = $this->getIdColumn($idColumn ?: "");
+        $components[] = $this->getQueryColumns($columns);
+        $components[] = $this->getWhereClauses();
+        $components[] = $this->getHavingClauses();
+        $components[] = $this->getWithModels();
+        $components[] = $this->getOrderByClauses();
+        $components[] = $this->getOffsetClause();
+        $components[] = $this->getLimitClause();
+        $components[] = $this->getBindingsSlug();
+        $components[] = $keyDifferentiator;
+        $components[] = $this->macroKey;
 
-        return $key;
+        $key = implode('', array_filter($components));
+
+        // Sanitize and hash if needed
+        return CacheKeySanitizer::sanitizeAndHash($key);
     }
 
     protected function getBindingsSlug() : string

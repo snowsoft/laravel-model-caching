@@ -76,8 +76,19 @@ class SelectiveCacheInvalidator
                 // Tag desteklenmiyorsa, model class'ına göre key pattern ile temizle
                 $this->invalidateByPattern($model);
             }
+        } catch (\RedisException $e) {
+            // Redis hatalarını log'la ve re-throw et
+            \Log::error('Redis error during cache invalidation', [
+                'model' => get_class($model),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
         } catch (\Exception $e) {
-            // Silently fail
+            // Diğer hataları log'la ama devam et
+            \Log::warning('Cache invalidation failed', [
+                'model' => get_class($model),
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -191,6 +202,8 @@ class SelectiveCacheInvalidator
 
     /**
      * Pattern'e göre cache'leri temizle (tag desteklenmeyen cache'ler için)
+     *
+     * Redis keys() yerine SCAN kullanarak production-safe pattern matching yapar.
      */
     protected function invalidateByPattern(Model $model): void
     {
@@ -205,11 +218,93 @@ class SelectiveCacheInvalidator
         // Redis gibi pattern destekleyen cache'ler için
         if (method_exists($this->cache->getStore(), 'getRedis')) {
             $redis = $this->cache->getStore()->getRedis();
-            $keys = $redis->keys($pattern);
-            foreach ($keys as $key) {
-                $this->cache->forget($key);
+
+            // keys() yerine SCAN kullan (production-safe)
+            $keys = $this->scanKeys($redis, $pattern);
+
+            // Batch delete
+            if (!empty($keys)) {
+                // Redis DEL komutu array kabul eder
+                if (method_exists($redis, 'del')) {
+                    $redis->del($keys);
+                } else {
+                    // Fallback: tek tek sil
+                    foreach ($keys as $key) {
+                        $this->cache->forget($key);
+                    }
+                }
             }
         }
+    }
+
+    /**
+     * SCAN kullanarak pattern'e uyan key'leri bul
+     *
+     * @param mixed $redis
+     * @param string $pattern
+     * @return array
+     */
+    protected function scanKeys($redis, string $pattern): array
+    {
+        $keys = [];
+        $cursor = 0;
+        $maxIterations = 1000; // Timeout koruması
+        $maxKeys = 10000; // Memory koruması
+        $iteration = 0;
+
+        do {
+            try {
+                // SCAN komutu
+                if (method_exists($redis, 'scan')) {
+                    $result = $redis->scan($cursor, [
+                        'MATCH' => $pattern,
+                        'COUNT' => 100, // Batch size
+                    ]);
+                } else {
+                    // Fallback: keys() kullan (sadece development için)
+                    if (app()->environment('local', 'testing')) {
+                        $result = [0, $redis->keys($pattern)];
+                    } else {
+                        \Log::warning('Redis SCAN not available, skipping pattern invalidation', [
+                            'pattern' => $pattern,
+                        ]);
+                        break;
+                    }
+                }
+
+                $cursor = is_array($result) ? ($result[0] ?? 0) : 0;
+                $foundKeys = is_array($result) ? ($result[1] ?? []) : [];
+
+                $keys = array_merge($keys, $foundKeys);
+
+                $iteration++;
+
+                // Safety checks
+                if ($iteration > $maxIterations) {
+                    \Log::warning('SCAN iteration limit reached', [
+                        'pattern' => $pattern,
+                        'keys_found' => count($keys),
+                    ]);
+                    break;
+                }
+
+                if (count($keys) > $maxKeys) {
+                    \Log::warning('Too many cache keys to invalidate', [
+                        'pattern' => $pattern,
+                        'keys_found' => count($keys),
+                    ]);
+                    break;
+                }
+            } catch (\Exception $e) {
+                \Log::error('Error during cache key scanning', [
+                    'pattern' => $pattern,
+                    'error' => $e->getMessage(),
+                ]);
+                break;
+            }
+        } while ($cursor !== 0 && $cursor !== '0');
+
+        return array_unique($keys);
     }
 
     /**

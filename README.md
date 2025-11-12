@@ -166,9 +166,18 @@ Configure different cache stores per database connection:
 'connection-stores' => [
     'mysql' => 'redis',
     'pgsql' => 'memcached',
+    'mongodb' => 'redis_mongodb',
     'tenant_db_1' => 'redis_tenant_1',
 ],
 ```
+
+**Supported Databases:**
+- ✅ MySQL/MariaDB
+- ✅ PostgreSQL (fully tested)
+- ✅ SQLite
+- ✅ MongoDB (with jenssegers/mongodb or mongodb/laravel-mongodb)
+
+See [DATABASE_SUPPORT.md](DATABASE_SUPPORT.md) for detailed PostgreSQL and MongoDB usage guide.
 
 ## Configuration
 
@@ -285,6 +294,37 @@ The following packages may conflict:
 - Lazy-loaded relationships (except belongs-to) are not cached
 - Using `select()` clauses may require manual cache management
 - Transactions may require manual cache flushing
+
+## Testing
+
+The package includes comprehensive security and performance tests:
+
+### Security Tests
+- **Cache Key Injection Tests**: Prevents SQL injection, XSS, and other injection attacks in cache keys
+- **Tenant Isolation Tests**: Ensures multi-tenant cache isolation and prevents cross-tenant access
+- **Cache Poisoning Tests**: Prevents cache poisoning attacks and ensures proper cache invalidation
+
+### Performance Tests
+- **Cache Hit/Miss Tests**: Measures cache hit rates and performance improvements
+- **Memory Usage Tests**: Monitors memory consumption and prevents memory leaks
+- **Concurrency Tests**: Tests concurrent access and race conditions
+- **Query Performance Tests**: Measures query execution time improvements
+
+Run all tests:
+```bash
+phpunit
+```
+
+Run specific test suites:
+```bash
+# Security tests
+phpunit tests/Integration/Security/
+
+# Performance tests
+phpunit tests/Integration/Performance/
+```
+
+See [TESTING.md](TESTING.md) for detailed testing documentation.
 
 ## Contributing
 

@@ -33,8 +33,17 @@ class TenantResolver
         if (self::$resolver !== null) {
             try {
                 $tenantId = call_user_func(self::$resolver);
-                return $tenantId ? (string) $tenantId : null;
+                $tenantId = $tenantId ? (string) $tenantId : null;
+
+                // Validate tenant ID
+                if ($tenantId && !self::validateTenantId($tenantId)) {
+                    \Log::warning('Invalid tenant ID format', ['tenant_id' => $tenantId]);
+                    return null;
+                }
+
+                return $tenantId;
             } catch (\Exception $e) {
+                \Log::error('Tenant resolver error', ['error' => $e->getMessage()]);
                 return null;
             }
         }
@@ -46,9 +55,18 @@ class TenantResolver
                 $resolver = eval("return {$resolverConfig};");
                 if ($resolver instanceof Closure) {
                     $tenantId = call_user_func($resolver);
-                    return $tenantId ? (string) $tenantId : null;
+                    $tenantId = $tenantId ? (string) $tenantId : null;
+
+                    // Validate tenant ID
+                    if ($tenantId && !self::validateTenantId($tenantId)) {
+                        \Log::warning('Invalid tenant ID format from config resolver', ['tenant_id' => $tenantId]);
+                        return null;
+                    }
+
+                    return $tenantId;
                 }
             } catch (\Exception $e) {
+                \Log::error('Tenant resolver config error', ['error' => $e->getMessage()]);
                 // Fall through to default resolvers
             }
         }
@@ -94,6 +112,28 @@ class TenantResolver
         }
 
         return null;
+    }
+
+    /**
+     * Validate tenant ID format
+     *
+     * @param string $tenantId
+     * @return bool
+     */
+    protected static function validateTenantId(string $tenantId): bool
+    {
+        // Sadece alphanumeric, dash, underscore, dot'a izin ver
+        // Length: 1-64 karakter
+        if (!preg_match('/^[a-zA-Z0-9_.-]{1,64}$/', $tenantId)) {
+            return false;
+        }
+
+        // Null bytes kontrolü
+        if (strpos($tenantId, "\0") !== false) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
