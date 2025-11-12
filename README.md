@@ -3,6 +3,8 @@
 [![Laravel Package](https://img.shields.io/badge/Laravel-8.0--12.0-red.svg)](https://laravel.com)
 [![PHP Version](https://img.shields.io/badge/PHP-8.0%2B-blue.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Security](https://img.shields.io/badge/Security-Hardened-brightgreen.svg)](tests/Integration/Security)
+[![Performance](https://img.shields.io/badge/Performance-Optimized-orange.svg)](tests/Integration/Performance)
 
 **Enhanced Laravel Model Caching with Multi-Tenancy, Selective Invalidation, and Background Refresh Support**
 
@@ -18,6 +20,11 @@ This package provides automatic, intelligent caching for Eloquent models with ad
 - ✅ **Multiple database connections** - Separate cache per connection
 - ✅ **Connection-specific cache stores** - Use different cache stores per database
 - ✅ **Automatic use of cache tags** for cache providers that support them
+- ✅ **Full-text search caching** - Search queries with cache support
+- ✅ **Advanced query extensions** - Pagination, chunking, custom expiration
+- ✅ **Bulk operations** - Bulk update/delete with cache invalidation
+- ✅ **Transaction-aware caching** - Cache management in transactions
+- ✅ **Optimistic locking** - Update conflict resolution
 - ✅ **Laravel 8.0-12.0 support** - Backward compatible
 
 ## Requirements
@@ -242,6 +249,89 @@ Product::flushCache();
 
 // Flush all model cache
 php artisan modelCache:clear
+
+// Flush cache for specific model
+php artisan modelCache:clear --model="App\Models\Product"
+```
+
+### Cache Statistics
+
+View cache statistics and performance metrics:
+
+```bash
+# General statistics
+php artisan modelCache:stats
+
+# Model-specific statistics
+php artisan modelCache:stats --model="App\Models\Product"
+
+# Tenant-specific statistics
+php artisan modelCache:stats --tenant=123
+
+# Detailed statistics
+php artisan modelCache:stats --detailed
+```
+
+### Cache Health Check
+
+Check cache system health:
+
+```bash
+php artisan modelCache:health
+```
+
+This command checks:
+- Cache store availability
+- Tag support
+- Configuration validity
+- Multi-tenancy setup
+
+### Cache Debugging
+
+Debug cache keys and operations:
+
+```bash
+# Debug specific cache key
+php artisan modelCache:debug --key="cache_key_here"
+
+# Debug model cache
+php artisan modelCache:debug --model="App\Models\Product"
+
+# Trace cache invalidation
+php artisan modelCache:debug --model="App\Models\Product" --trace
+```
+
+### Cache Warming
+
+Pre-warm cache for better performance:
+
+```bash
+# Warm specific model
+php artisan modelCache:warm --model="App\Models\Product"
+
+# Warm all models
+php artisan modelCache:warm --all
+
+# Warm with strategy (popular, recent, all)
+php artisan modelCache:warm --model="App\Models\Product" --strategy=popular
+
+# Queue warming process
+php artisan modelCache:warm --model="App\Models\Product" --queue
+```
+
+### Cache Benchmarking
+
+Benchmark cache performance:
+
+```bash
+# Benchmark model
+php artisan modelCache:benchmark --model="App\Models\Product"
+
+# Custom iterations
+php artisan modelCache:benchmark --model="App\Models\Product" --iterations=1000
+
+# Compare with/without cache
+php artisan modelCache:benchmark --model="App\Models\Product"
 ```
 
 ### Cache Cooldown
@@ -268,6 +358,69 @@ The package automatically invalidates only related caches:
 // When a product is updated, only product-related caches are cleared
 $product->update(['name' => 'New Name']);
 // Related caches (categories, tags, etc.) are automatically invalidated
+```
+
+### Full-Text Search
+
+Search queries with automatic caching:
+
+```php
+class Product extends CachedModel
+{
+    protected $searchable = ['name', 'description', 'sku'];
+}
+
+// Search with caching
+$products = Product::search('laptop')->get();
+
+// Search with filters
+$products = Product::searchWithFilters('laptop', [
+    'category_id' => 1,
+    'status' => 'active'
+])->get();
+```
+
+### Advanced Query Extensions
+
+```php
+// Cache-aware pagination
+$products = Product::cachedPaginate(20);
+
+// Custom cache expiration
+$products = Product::cacheFor(3600)->where('status', 'active')->get();
+
+// Custom cache tags
+$products = Product::cacheTags(['featured'])->where('featured', true)->get();
+```
+
+### Bulk Operations
+
+```php
+// Bulk update with cache invalidation
+$updated = Product::bulkUpdate(
+    ['status' => 'active'],
+    ['category_id' => 1]
+);
+
+// Transaction-aware bulk operations
+use Snowsoft\LaravelModelCaching\Services\UpdateCacheService;
+
+$service = app(UpdateCacheService::class);
+$updated = $service->transaction(function () {
+    return Product::bulkUpdate(['status' => 'active'], ['id' => [1, 2, 3]]);
+});
+```
+
+### Optimistic Locking
+
+```php
+use Snowsoft\LaravelModelCaching\Services\UpdateCacheService;
+
+$service = app(UpdateCacheService::class);
+
+// Update with version control
+$product = Product::find(1);
+$service->updateWithLock($product, ['name' => 'Updated'], $product->version);
 ```
 
 ## Performance
@@ -325,6 +478,83 @@ phpunit tests/Integration/Performance/
 ```
 
 See [TESTING.md](TESTING.md) for detailed testing documentation.
+
+## Troubleshooting
+
+Having issues? Check our [Troubleshooting Guide](TROUBLESHOOTING.md) for common problems and solutions.
+
+Common commands:
+```bash
+# Health check
+php artisan modelCache:health
+
+# View statistics
+php artisan modelCache:stats
+
+# Clear cache
+php artisan modelCache:clear
+```
+
+## Cache Events
+
+The package fires events for cache operations that you can listen to:
+
+```php
+use Snowsoft\LaravelModelCaching\Events\CacheHit;
+use Snowsoft\LaravelModelCaching\Events\CacheMiss;
+use Snowsoft\LaravelModelCaching\Events\CacheInvalidated;
+
+Event::listen(CacheHit::class, function ($event) {
+    Log::info('Cache hit', ['key' => $event->key]);
+});
+
+Event::listen(CacheMiss::class, function ($event) {
+    Log::info('Cache miss', ['key' => $event->key]);
+});
+
+Event::listen(CacheInvalidated::class, function ($event) {
+    Log::info('Cache invalidated', ['model' => get_class($event->model)]);
+});
+```
+
+See [EVENTS.md](EVENTS.md) for detailed event documentation.
+
+## Testing Helpers
+
+Use cache assertions in your tests:
+
+```php
+use Snowsoft\LaravelModelCaching\Testing\CacheAssertions;
+
+class ProductTest extends TestCase
+{
+    use CacheAssertions;
+
+    public function test_cache_is_used()
+    {
+        $this->assertCacheHit(Product::class, function() {
+            return Product::all();
+        });
+    }
+}
+```
+
+## Examples
+
+See [EXAMPLES.md](EXAMPLES.md) for comprehensive usage examples and real-world scenarios.
+
+## Search, Query & Update Features
+
+See [SEARCH_QUERY_UPDATE_FEATURES.md](SEARCH_QUERY_UPDATE_FEATURES.md) for detailed documentation on:
+- Full-text search with caching
+- Advanced query extensions
+- Bulk operations
+- Transaction-aware caching
+- Optimistic locking
+
+## Additional Features
+
+See [EXTRA_FEATURES.md](EXTRA_FEATURES.md) for a list of additional features and improvements that can be added to the package.
 
 ## Contributing
 

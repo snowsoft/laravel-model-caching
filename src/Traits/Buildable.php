@@ -303,9 +303,38 @@ trait Buildable
             $this->checkCooldownAndRemoveIfExpired($this->getModel());
         }
 
-        return $this->cache($cacheTags)
-            ->rememberForever(
+        $model = $this->getModel() ?? $this->model ?? null;
+        $cache = $this->cache($cacheTags);
+
+        // Check if cache exists
+        $cached = $cache->get($hashedCacheKey);
+
+        if ($cached !== null) {
+            // Cache hit
+            if (class_exists(\Snowsoft\LaravelModelCaching\Events\CacheHit::class)) {
+                event(new \Snowsoft\LaravelModelCaching\Events\CacheHit($hashedCacheKey, $model, $cacheTags));
+            }
+            return $cached;
+        }
+
+        // Cache miss - fire event before caching
+        if (class_exists(\Snowsoft\LaravelModelCaching\Events\CacheMiss::class)) {
+            event(new \Snowsoft\LaravelModelCaching\Events\CacheMiss($hashedCacheKey, $model, $cacheTags));
+        }
+
+        // Custom cache expiration kontrolü
+        $expiration = property_exists($this, 'cacheExpiration') ? $this->cacheExpiration : null;
+
+        // Custom cache tags kontrolü
+        if (property_exists($this, 'customCacheTags') && !empty($this->customCacheTags)) {
+            $cacheTags = array_merge($cacheTags, $this->customCacheTags);
+            $cache = $this->cache($cacheTags);
+        }
+
+        if ($expiration) {
+            return $cache->remember(
                 $hashedCacheKey,
+                $expiration,
                 function () use ($arguments, $cacheKey, $method) {
                     return [
                         "key" => $cacheKey,
@@ -313,5 +342,16 @@ trait Buildable
                     ];
                 }
             );
+        }
+
+        return $cache->rememberForever(
+            $hashedCacheKey,
+            function () use ($arguments, $cacheKey, $method) {
+                return [
+                    "key" => $cacheKey,
+                    "value" => parent::{$method}(...$arguments),
+                ];
+            }
+        );
     }
 }

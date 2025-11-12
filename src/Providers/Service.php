@@ -4,6 +4,11 @@ namespace Snowsoft\LaravelModelCaching\Providers;
 
 use Snowsoft\LaravelModelCaching\Console\Commands\Clear;
 use Snowsoft\LaravelModelCaching\Console\Commands\Publish;
+use Snowsoft\LaravelModelCaching\Console\Commands\Stats;
+use Snowsoft\LaravelModelCaching\Console\Commands\Health;
+use Snowsoft\LaravelModelCaching\Console\Commands\Debug;
+use Snowsoft\LaravelModelCaching\Console\Commands\Warm;
+use Snowsoft\LaravelModelCaching\Console\Commands\Benchmark;
 use Snowsoft\LaravelModelCaching\Helper;
 use Snowsoft\LaravelModelCaching\ModelCaching;
 use Illuminate\Support\ServiceProvider;
@@ -19,6 +24,11 @@ class Service extends ServiceProvider
         $this->commands([
             Clear::class,
             Publish::class,
+            Stats::class,
+            Health::class,
+            Debug::class,
+            Warm::class,
+            Benchmark::class,
         ]);
         $this->publishes([
             $configPath => config_path('laravel-model-caching.php'),
@@ -40,5 +50,7 @@ class Service extends ServiceProvider
         });
         $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
         $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\CacheRefreshService::class);
+        $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\SearchCacheService::class);
+        $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\UpdateCacheService::class);
     }
 }
