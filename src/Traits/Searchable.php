@@ -2,15 +2,19 @@
 
 namespace Snowsoft\LaravelModelCaching\Traits;
 
+use Illuminate\Container\Container;
+use Snowsoft\LaravelModelCaching\Services\SearchIndexService;
+
 /**
  * Searchable Trait
  *
  * Full-text search ve arama sorguları için cache desteği
+ * Development/test ortamlarında MongoDB veya PostgreSQL index desteği
  */
 trait Searchable
 {
     /**
-     * Full-text search with caching
+     * Full-text search with caching and optional index support
      *
      * @param string $term
      * @param array $columns
@@ -29,7 +33,23 @@ trait Searchable
             return $query->whereRaw('1 = 0'); // No results if no searchable columns
         }
 
-        // Full-text search query
+        // Index servisi aktifse, index'ten arama yap
+        $indexService = Container::getInstance()->make(SearchIndexService::class);
+        if ($indexService->isEnabled()) {
+            $model = $this->getModel() ?? $this->model ?? null;
+            if ($model) {
+                $indexedIds = $indexService->searchIndex($model, $term, $columns);
+                if (!empty($indexedIds)) {
+                    // Index'ten bulunan ID'lerle sorgu oluştur
+                    $query->whereIn($model->getKeyName(), $indexedIds);
+                    $query->macroKey = $query->macroKey ?? '';
+                    $query->macroKey .= '-search_index_' . md5($term . implode('_', $columns));
+                    return $query;
+                }
+            }
+        }
+
+        // Fallback: Normal LIKE sorgusu
         $query->where(function ($q) use ($term, $columns) {
             foreach ($columns as $column) {
                 $q->orWhere($column, 'like', "%{$term}%");

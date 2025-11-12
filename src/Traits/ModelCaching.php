@@ -73,24 +73,36 @@ trait ModelCaching
                 $invalidator = Container::getInstance()
                     ->make(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
                 $invalidator->invalidateOnCreated($instance);
+
+                // Search index güncelle
+                static::updateSearchIndex($instance);
             });
 
             static::updated(function ($instance) {
                 $invalidator = Container::getInstance()
                     ->make(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
                 $invalidator->invalidateOnUpdated($instance, $instance->getDirty());
+
+                // Search index güncelle
+                static::updateSearchIndex($instance);
             });
 
             static::deleted(function ($instance) {
                 $invalidator = Container::getInstance()
                     ->make(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
                 $invalidator->invalidateOnDeleted($instance);
+
+                // Search index'ten sil
+                static::deleteSearchIndex($instance);
             });
 
             static::restored(function ($instance) {
                 $invalidator = Container::getInstance()
                     ->make(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
                 $invalidator->invalidateOnUpdated($instance);
+
+                // Search index güncelle
+                static::updateSearchIndex($instance);
             });
         } else {
             // Legacy behavior - flush all cache
@@ -214,5 +226,57 @@ trait ModelCaching
             });
 
         return $query;
+    }
+
+    /**
+     * Search index'i güncelle
+     *
+     * @param Model $instance
+     * @return void
+     */
+    protected static function updateSearchIndex(Model $instance): void
+    {
+        try {
+            $indexService = Container::getInstance()
+                ->make(\Snowsoft\LaravelModelCaching\Services\SearchIndexService::class);
+
+            if ($indexService->isEnabled()) {
+                // Searchable columns al
+                $searchableColumns = [];
+                if (property_exists($instance, 'searchable') && is_array($instance->searchable)) {
+                    $searchableColumns = $instance->searchable;
+                }
+
+                // Index oluştur (eğer yoksa)
+                if (!empty($searchableColumns)) {
+                    $indexService->createIndex($instance, $searchableColumns);
+                }
+
+                // Index'i güncelle
+                $indexService->updateIndex($instance, $instance->toArray());
+            }
+        } catch (\Exception $e) {
+            // Silently fail - index servisi optional
+        }
+    }
+
+    /**
+     * Search index'ten sil
+     *
+     * @param Model $instance
+     * @return void
+     */
+    protected static function deleteSearchIndex(Model $instance): void
+    {
+        try {
+            $indexService = Container::getInstance()
+                ->make(\Snowsoft\LaravelModelCaching\Services\SearchIndexService::class);
+
+            if ($indexService->isEnabled()) {
+                $indexService->deleteIndex($instance);
+            }
+        } catch (\Exception $e) {
+            // Silently fail - index servisi optional
+        }
     }
 }

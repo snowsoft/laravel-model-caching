@@ -21,6 +21,7 @@ This package provides automatic, intelligent caching for Eloquent models with ad
 - ✅ **Connection-specific cache stores** - Use different cache stores per database
 - ✅ **Automatic use of cache tags** for cache providers that support them
 - ✅ **Full-text search caching** - Search queries with cache support
+- ✅ **Search index database** - MongoDB/PostgreSQL as search index (dev/test only)
 - ✅ **Advanced query extensions** - Pagination, chunking, custom expiration
 - ✅ **Bulk operations** - Bulk update/delete with cache invalidation
 - ✅ **Transaction-aware caching** - Cache management in transactions
@@ -216,22 +217,41 @@ MODEL_CACHE_REFRESH_DELAY=0
 
 # Connection-specific stores (JSON format)
 MODEL_CACHE_CONNECTION_STORES={"mysql":"redis","pgsql":"memcached"}
+
+# Search index (development/test only)
+MODEL_CACHE_SEARCH_INDEX_ENABLED=false
+MODEL_CACHE_SEARCH_INDEX_DRIVER=null # 'mongodb' or 'pgsql'
+MODEL_CACHE_SEARCH_INDEX_CONNECTION=null # Connection name
 ```
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+read_file
 
 ## Cache Drivers
 
 ### Recommended (Taggable)
-- ✅ Redis
+- ✅ Redis (highly recommended for production)
 - ✅ Memcached
-- ✅ APC
-- ✅ Array (for testing)
+- ✅ APC/APCu
+- ✅ Array (for testing only)
+
+### Supported with Limitations
+- ⚠️ MongoDB (requires `mongodb/laravel-mongodb` package)
+  - Tag support may be limited
+  - See [CACHE_DRIVERS.md](CACHE_DRIVERS.md) for setup
+- ⚠️ PostgreSQL Database Cache (using Database driver)
+  - No tag support
+  - Full cache flush on updates
+  - Lower performance than Redis/Memcached
+  - See [CACHE_DRIVERS.md](CACHE_DRIVERS.md) for setup
 
 ### Not Recommended (Non-taggable)
-- ❌ Database
+- ❌ Database (MySQL/PostgreSQL/SQLite)
 - ❌ File
 - ❌ DynamoDB
 
 **Note:** Non-taggable drivers will flush the entire cache on model updates instead of selective invalidation.
+
+**For detailed cache driver documentation, see [CACHE_DRIVERS.md](CACHE_DRIVERS.md)**
 
 ## Usage Examples
 
@@ -542,6 +562,55 @@ class ProductTest extends TestCase
 ## Examples
 
 See [EXAMPLES.md](EXAMPLES.md) for comprehensive usage examples and real-world scenarios.
+
+## Search Index Database (Development/Test Only)
+
+For development and test environments, you can use MongoDB or PostgreSQL as an intermediate search index database to improve search performance and test full-text search features.
+
+**Important:** This feature is **automatically disabled in production** environments.
+
+### Quick Setup
+
+#### MongoDB
+
+```env
+MODEL_CACHE_SEARCH_INDEX_ENABLED=true
+MODEL_CACHE_SEARCH_INDEX_DRIVER=mongodb
+MODEL_CACHE_SEARCH_INDEX_CONNECTION=mongodb
+```
+
+#### PostgreSQL
+
+```env
+MODEL_CACHE_SEARCH_INDEX_ENABLED=true
+MODEL_CACHE_SEARCH_INDEX_DRIVER=pgsql
+MODEL_CACHE_SEARCH_INDEX_CONNECTION=pgsql_search
+```
+
+### Usage
+
+```php
+class Product extends CachedModel
+{
+    protected $searchable = ['name', 'description', 'sku'];
+}
+
+// Index automatically created/updated on model changes
+$product = Product::create(['name' => 'Laptop', 'description' => 'Gaming']);
+
+// Search uses index if enabled, falls back to LIKE queries otherwise
+$products = Product::search('laptop')->get();
+```
+
+### Features
+
+- ✅ **MongoDB Text Index** - Full-text search with MongoDB text indexes
+- ✅ **PostgreSQL TSVECTOR** - Full-text search with PostgreSQL tsvector/tsquery
+- ✅ **Automatic Index Management** - Indexes updated automatically on model changes
+- ✅ **Index Rebuild** - Rebuild indexes for all models
+- ✅ **Fallback Support** - Falls back to LIKE queries if index service is disabled
+
+See [SEARCH_INDEX.md](SEARCH_INDEX.md) for detailed documentation.
 
 ## Search, Query & Update Features
 

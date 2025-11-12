@@ -51,6 +51,7 @@ class Service extends ServiceProvider
         $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\SelectiveCacheInvalidator::class);
         $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\CacheRefreshService::class);
         $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\SearchCacheService::class);
+        $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\SearchIndexService::class);
         $this->app->singleton(\Snowsoft\LaravelModelCaching\Services\UpdateCacheService::class);
     }
 }

@@ -48,4 +48,12 @@ return [
         'queue' => env('MODEL_CACHE_REFRESH_QUEUE', 'default'),
         'delay' => env('MODEL_CACHE_REFRESH_DELAY', 0), // seconds
     ],
+
+    // Search index (for development/test environments)
+    // Arama ve indexleme için ara veritabanı desteği
+    'search-index' => [
+        'enabled' => env('MODEL_CACHE_SEARCH_INDEX_ENABLED', false),
+        'driver' => env('MODEL_CACHE_SEARCH_INDEX_DRIVER', null), // 'mongodb' or 'pgsql'
+        'connection' => env('MODEL_CACHE_SEARCH_INDEX_CONNECTION', null), // Connection name
+    ],
 ];
